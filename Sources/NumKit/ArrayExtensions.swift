@@ -89,7 +89,7 @@ extension Array where Iterator.Element == Double {
 
         var x = Self.zeros(length: nCount)
 
-        var winSQ = getHannWindow(frameLength: (winLength)).map { Double($0)*Double(($0)) }
+        let winSQ = getHannWindow(frameLength: (winLength)).map { Double($0)*Double(($0)) }
 
         for index in 0..<nFrames {
             let sample = index * hopLength

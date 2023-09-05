@@ -13,10 +13,10 @@ extension Array where Iterator.Element: FloatingPoint {
     func floatingPointStrided(shape: (width: Int, height: Int), stride: (xStride: Int, yStride: Int)? = nil) -> [[Element]] {
         var resultArray: [[Element]] = []
         
-        let byteStrideX = stride?.xStride ?? 1
-        let byteStrideY = stride?.yStride ?? shape.height
-        var byteOffsetX: Int = 0
-        var byteOffsetY: Int = 0
+//        let byteStrideX = stride?.xStride ?? 1
+//        let byteStrideY = stride?.yStride ?? shape.height
+//        var byteOffsetX: Int = 0
+//        var byteOffsetY: Int = 0
         for yIndex in 0..<shape.width {
             var lineArray = [Element]()
             for xIndex in 0..<shape.height {
@@ -70,11 +70,11 @@ extension Array where Iterator.Element: FloatingPoint {
 extension Array where Iterator.Element == Double {
             
     func frame(frameLength: Int = 2048, hopLength: Int = 512) -> [[Element]] {
-        let framesCount = 1 + (self.count - frameLength) / hopLength
+//        let framesCount = 1 + (self.count - frameLength) / hopLength
         let strides = MemoryLayout.size(ofValue: Double(0))
         
         let outputShape = (width: self.count - frameLength + 1, height: frameLength)
-        let outputStrides = (xStride: strides*hopLength, yStride: strides)
+//        let outputStrides = (xStride: strides*hopLength, yStride: strides)
                 
         let verticalSize = Int(ceil(Float(outputShape.width)/Float(hopLength)))
               

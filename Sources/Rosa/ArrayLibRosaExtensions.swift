@@ -9,7 +9,6 @@
 import Foundation
 import PocketFFT
 import PlainPocketFFT
-import Accelerate
 
 
 public extension Array where Iterator.Element: FloatingPoint {
@@ -79,7 +78,7 @@ public extension Array where Iterator.Element: FloatingPoint {
 
 public extension Array where Element == Double {
     
-    func stft(nFFT: Int = 256, hopLength: Int = 1024, isAccelerated: Bool = false) -> [[(real: Double, imagine: Double)]] {
+    func stft(nFFT: Int = 256, hopLength: Int = 1024) -> [[(real: Double, imagine: Double)]] {
         let FFTWindow = [Double].getHannWindow(frameLength: (nFFT)).map { [$0] }
 
         let centered = self.reflectPad(fftSize: nFFT)
@@ -87,9 +86,9 @@ public extension Array where Element == Double {
         let yFrames = centered.frame(frameLength: nFFT, hopLength: hopLength)
 
         let matrix = FFTWindow.multiplyVector(matrix: yFrames)
-                                        
-        let rfftMatrix = isAccelerated ? matrix.acceleratedRFFT : matrix.rfft
-        
+                
+        let rfftMatrix = matrix.rfft
+                        
         let result = rfftMatrix
         
         return result
@@ -152,14 +151,14 @@ public extension Array where Element == [(real: Double, imagine: Double)] {
             let blT = Swift.min(blS + nCollumns, nFramesCount)
             
             let size = blT - blS
-            var resultArray = Array<Double>(repeating: 0.0, count: size*self.count)
-            
-            let norm = nFFT
-            let fct = 1.0 / Double(nFFT)
+//            var resultArray = Array<Double>(repeating: 0.0, count: size*self.count)
+//
+//            let norm = nFFT
+//            let fct = 1.0 / Double(nFFT)
                  
             let trimmedMatrix = self.map { Array<(real: Double, imagine: Double)>($0[blS..<blT]) }
             
-            var irfftMatrix = trimmedMatrix.irfft
+            let irfftMatrix = trimmedMatrix.irfft
             
             let ytmp = iFFTWindow.multiplyVector(matrix: irfftMatrix)
             
@@ -168,7 +167,7 @@ public extension Array where Element == [(real: Double, imagine: Double)] {
             let ytmpCollumns = ytmp.first?.count ?? 0
             for frameIndex in 0..<ytmpCollumns {
                 let sample = frameIndex * hopLength
-                let yDiff = ytmp.flatMap { $0[frameIndex] }
+                let yDiff = ytmp.compactMap { $0[frameIndex] }
                 for index in 0..<yDiff.count {
                     y[ytmpIndex + sample + index] += yDiff[index]
                 }
@@ -205,7 +204,7 @@ public extension Array where Element == [(real: Double, imagine: Double)] {
         
         let fct = 1.0 / Double(invNorm)
 
-        var stftChunk = slicedMatrix.map { $0.flatMap { [$0.real, $0.imagine] } } .flatMap { $0.flatMap { $0 } }
+        var stftChunk = slicedMatrix.map { $0.compactMap { [$0.real, $0.imagine] } } .flatMap { $0.flatMap { $0 } }
 
         var resultArray = [Double].init(repeating: 0.0, count: invNorm*rows)
         stftChunk.withUnsafeMutableBytes { stftChunkData -> Void in
@@ -225,44 +224,6 @@ public extension Array where Element == [(real: Double, imagine: Double)] {
 }
 
 extension Array where Element == [Double] {
-    
-    var acceleratedRFFT: [[(real: Double, imagine: Double)]] {
-        let newMatrixCols = self.first?.count ?? 1
-        let newMatrixRows = self.count
-
-        let rfftRows = newMatrixRows/2 + 1
-        let rfftCount = rfftRows*newMatrixCols + newMatrixCols + 1
-
-        let flatMatrix = self.transposed.flatMap { return $0 }
-         
-        let size = (1 + newMatrixCols/2)*newMatrixRows
-        let length = vDSP_Length(pow(2, floor(log2(Float(size)))))
-
-        let setup = vDSP_DFT_zop_CreateSetupD(nil, length, vDSP_DFT_Direction.FORWARD)
-
-         let inputImaginary = [Double](repeating: 0.0, count: rfftCount)
-         var outputImaginary = [Double](repeating: 0.0, count: rfftCount)
-         var outputReal = [Double](repeating: 0.0, count: rfftCount)
-
-         vDSP_DFT_ExecuteD(setup!, flatMatrix, inputImaginary, &outputReal, &outputImaginary)
-
-        let resultRealMatrix = outputReal.chunked(into: newMatrixCols)
-        let resultImagineMatrix = outputImaginary.chunked(into: newMatrixCols)
-
-        var result = [[(real: Double, imagine: Double)]]()
-        for row in 0..<rfftRows {
-            let realMatrixRow = resultRealMatrix[row]
-            let imagineMatrixRow = resultImagineMatrix[row]
-            
-            var resultRow = [(real: Double, imagine: Double)]()
-            for col in 0..<realMatrixRow.count {
-                resultRow.append((real: realMatrixRow[col], imagine: imagineMatrixRow[col]))
-            }
-            result.append(resultRow)
-        }
-        
-        return result
-     }
     
     var rfft: [[(real: Double, imagine: Double)]] {
         let transposed = self.transposed
