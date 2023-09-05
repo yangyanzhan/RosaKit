@@ -71,7 +71,7 @@ extension Array where Iterator.Element == Double {
             
     func frame(frameLength: Int = 2048, hopLength: Int = 512) -> [[Element]] {
 //        let framesCount = 1 + (self.count - frameLength) / hopLength
-        let strides = MemoryLayout.size(ofValue: Double(0))
+//        let strides = MemoryLayout.size(ofValue: Double(0))
         
         let outputShape = (width: self.count - frameLength + 1, height: frameLength)
 //        let outputStrides = (xStride: strides*hopLength, yStride: strides)

@@ -150,7 +150,7 @@ public extension Array where Element == [(real: Double, imagine: Double)] {
             let blS = index * nCollumns
             let blT = Swift.min(blS + nCollumns, nFramesCount)
             
-            let size = blT - blS
+//            let size = blT - blS
 //            var resultArray = Array<Double>(repeating: 0.0, count: size*self.count)
 //
 //            let norm = nFFT
